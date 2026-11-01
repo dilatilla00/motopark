@@ -140,7 +140,7 @@ body{margin:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none
       <button class="btn ghost wide" id="howBtn">Nasıl oynanır</button>
       <button class="btn ghost wide" id="setBtn">Ayarlar</button>
     </div>
-    <p class="version">Sürüm 1.1 · prototip</p>
+    <p class="version">Sürüm 1.1.1 · prototip</p>
   </section>
 
   <!-- OYUN -->
@@ -152,7 +152,7 @@ body{margin:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none
     </div>
     <div class="hud"><div class="hearts" id="hearts" aria-label="Kalan can"></div><div class="time" id="time">0:00</div></div>
     <div class="board-wrap"><div class="lot" id="lot"><div class="grid" id="grid"></div></div></div>
-    <p class="toast" id="toast">Dokun: işaretle · çift dokun: park et · sürükle: çoklu işaret</p>
+    <p class="toast" id="toast">Dokun: işaretle · çift dokun: park et · sürükle: işaretle / sil</p>
     <div class="tools">
       <button class="tool" id="undoBtn"><span class="ic">↶</span>Geri al</button>
       <button class="tool" id="hintBtn"><span class="badge" id="hintCount">3</span><span class="ic">💡</span>İpucu</button>
@@ -248,7 +248,7 @@ function startGame(n,daily){
   $('gTitle').textContent=daily?'Günün Bulmacası':lvl.name;
   $('gSub').textContent=`${n}×${n} park alanı${daily?' · '+key.split('-').reverse().join('.'):''}`;
   $('lot').classList.remove('won');
-  toast('Dokun: işaretle · çift dokun: park et · sürükle: çoklu işaret');
+  toast('Dokun: işaretle · çift dokun: park et · sürükle: işaretle / sil');
   render();drawHud();show('game');
   clearInterval(timer);timer=setInterval(tick,1000);tick();
 }
@@ -297,10 +297,11 @@ function tryPlace(r,c){
 }
 // Sürükleyerek işaretleme: geçtiğin boş hücrelere ✕ koyar
 function cellAt(x,y){const el=document.elementFromPoint(x,y);const b=el&&el.closest?el.closest('#grid .cell'):null;return b?[+b.dataset.r,+b.dataset.c]:null}
-function dragMark(r,c){if(G.state[r][c]===0){setCell(r,c,1);sfx.tap()}}
+// Sürükleme modu başladığın hücreye göre belirlenir: ✕ üstünden başlarsan siler, boş hücreden başlarsan işaretler. Motorlara dokunmaz.
+function dragMark(r,c){const s=G.state[r][c];if(drag.erase){if(s===1){setCell(r,c,0);sfx.tap()}}else if(s===0){setCell(r,c,1);sfx.tap()}}
 $('grid').addEventListener('pointerdown',e=>{
   const b=e.target.closest('.cell');if(!b||!G||G.over)return;e.preventDefault();
-  drag={r:+b.dataset.r,c:+b.dataset.c,moved:false,id:e.pointerId};
+  const r0=+b.dataset.r,c0=+b.dataset.c;drag={r:r0,c:c0,moved:false,id:e.pointerId,erase:G.state[r0][c0]===1};
 });
 window.addEventListener('pointermove',e=>{
   if(!drag||e.pointerId!==drag.id)return;const at=cellAt(e.clientX,e.clientY);if(!at)return;
@@ -393,7 +394,7 @@ function howTo(){
   <div class="steps">
     <div class="step">${mini([['--r2','m'],['--r2',''],['--r2',''],['--r3',''],['--r3',''],['--r2',''],['--r3',''],['--r3',''],['--r3','']])}<p><b>Her renkli bölgeye tam bir motor</b> park et. Mavi bölgede bir motor var, bu yüzden mavi tamam.</p></div>
     <div class="step">${mini([['--r1','m'],['--r1','x'],['--r1','x'],['--r4','x'],['--r4','x'],['--r4',''],['--r4','x'],['--r5',''],['--r5','']])}<p>İki motor <b>aynı satırda, sütunda</b> olamaz ve <b>çapraz dahil yan yana</b> duramaz.</p></div>
-    <div class="step">${mini([['--r6','x'],['--r6',''],['--r6','m'],['--r7',''],['--r7',''],['--r6',''],['--r7',''],['--r7',''],['--r7','']])}<p><b>Dokun</b> ✕ koyar, <b>hızlı çift dokunuş</b> motoru park eder. Parmağını <b>sürükleyerek</b> birçok hücreyi ✕ ile işaretleyebilirsin. ✕ ya da motora tekrar dokunmak temizler. Yanlış park bir can götürür.</p></div>
+    <div class="step">${mini([['--r6','x'],['--r6',''],['--r6','m'],['--r7',''],['--r7',''],['--r6',''],['--r7',''],['--r7',''],['--r7','']])}<p><b>Dokun</b> ✕ koyar, <b>hızlı çift dokunuş</b> motoru park eder. Parmağını <b>sürükleyerek</b> birçok hücreyi ✕ ile işaretleyebilirsin. ✕ üzerinden başlayarak sürüklersen işaretleri silersin. ✕ ya da motora tekrar dokunmak temizler. Yanlış park bir can götürür.</p></div>
   </div>
   <button class="btn" data-act="tutorialDone">Anladım, başlayalım</button>`);
 }
