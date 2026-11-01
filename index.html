@@ -71,10 +71,10 @@ button{font-family:var(--body);color:inherit}
 .time{font-weight:800;font-size:18px}
 .board-wrap{flex:1;display:grid;place-items:center;min-height:0}
 .lot{position:relative;padding:8px;background:var(--asphalt-2);border-radius:6px;box-shadow:inset 0 0 0 3px var(--line),0 10px 30px rgba(0,0,0,.45)}
-.grid{display:grid;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.grid{display:grid;touch-action:none;user-select:none;-webkit-user-select:none}
 .cell{--sz:min(calc((100vw - 60px)/var(--n)),calc((100vh - 330px)/var(--n)),54px);width:var(--sz);height:var(--sz);box-sizing:border-box;
   border:0 solid var(--asphalt);background:var(--c);display:grid;place-items:center;cursor:pointer;padding:0;filter:saturate(.85)}
-.cell.mark::after{content:"";width:22%;height:22%;border-radius:50%;background:rgba(27,29,32,.55)}
+.cell.mark::after{content:"✕";font:800 calc(var(--sz)*.42)/1 var(--body);color:rgba(27,29,32,.62)}
 .cell.moto svg{width:74%;height:74%;animation:drop .25s ease-out}
 .cell.bad{animation:shake .35s}
 .lot.won .cell{filter:saturate(1.2)}
@@ -123,7 +123,7 @@ button{font-family:var(--body);color:inherit}
 *,*::before,*::after{box-sizing:border-box}
 img{max-width:100%}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;-webkit-tap-highlight-color:transparent;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);overscroll-behavior:none}
+body{margin:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);overscroll-behavior:none}
 </style>
 </head>
 <body>
@@ -140,7 +140,7 @@ body{margin:0;-webkit-tap-highlight-color:transparent;box-sizing:border-box;padd
       <button class="btn ghost wide" id="howBtn">Nasıl oynanır</button>
       <button class="btn ghost wide" id="setBtn">Ayarlar</button>
     </div>
-    <p class="version">Sürüm 1.0 · prototip</p>
+    <p class="version">Sürüm 1.1 · prototip</p>
   </section>
 
   <!-- OYUN -->
@@ -152,7 +152,7 @@ body{margin:0;-webkit-tap-highlight-color:transparent;box-sizing:border-box;padd
     </div>
     <div class="hud"><div class="hearts" id="hearts" aria-label="Kalan can"></div><div class="time" id="time">0:00</div></div>
     <div class="board-wrap"><div class="lot" id="lot"><div class="grid" id="grid"></div></div></div>
-    <p class="toast" id="toast">Dokun: işaretle · tekrar: park et · tekrar: temizle</p>
+    <p class="toast" id="toast">Dokun: işaretle · çift dokun: park et · sürükle: çoklu işaret</p>
     <div class="tools">
       <button class="tool" id="undoBtn"><span class="ic">↶</span>Geri al</button>
       <button class="tool" id="hintBtn"><span class="badge" id="hintCount">3</span><span class="ic">💡</span>İpucu</button>
@@ -248,7 +248,7 @@ function startGame(n,daily){
   $('gTitle').textContent=daily?'Günün Bulmacası':lvl.name;
   $('gSub').textContent=`${n}×${n} park alanı${daily?' · '+key.split('-').reverse().join('.'):''}`;
   $('lot').classList.remove('won');
-  toast('Dokun: işaretle · tekrar: park et · tekrar: temizle');
+  toast('Dokun: işaretle · çift dokun: park et · sürükle: çoklu işaret');
   render();drawHud();show('game');
   clearInterval(timer);timer=setInterval(tick,1000);tick();
 }
@@ -262,7 +262,7 @@ function render(){
     const th=(rr,cc)=>(rr<0||cc<0||rr>=n||cc>=n||region[rr][cc]!==region[r][c])?'3px':'.5px';
     b.style.borderWidth=`${th(r-1,c)} ${th(r,c+1)} ${th(r+1,c)} ${th(r,c-1)}`;
     b.setAttribute('aria-label',`Satır ${r+1}, sütun ${c+1}`);
-    paint(b,state[r][c]);b.addEventListener('click',()=>tap(r,c));grid.appendChild(b);
+    paint(b,state[r][c]);b.dataset.r=r;b.dataset.c=c;b.addEventListener('click',e=>{if(e.detail===0)tap(r,c,true)});grid.appendChild(b);
   }
 }
 const cellEl=(r,c)=>$('grid').children[r*G.n+c];
@@ -277,10 +277,17 @@ function drawHud(){
 }
 function toast(t){$('toast').textContent=t}
 
-function tap(r,c){
-  if(G.over)return;const s=G.state[r][c];
-  if(s===0){snapshot();setCell(r,c,1);sfx.tap();drawHud();return}
-  if(s===2){snapshot();setCell(r,c,0);sfx.tap();drawHud();return}
+let lastTap=null,drag=null;
+// Dokunuş: boş → ✕ · 0,5 sn içinde ikinci dokunuş → park et · geç dokunuş veya motor → temizle
+function tap(r,c,fromKey){
+  if(G.over)return;const s=G.state[r][c],now=Date.now();
+  const quick=lastTap&&lastTap.r===r&&lastTap.c===c&&now-lastTap.t<500;
+  lastTap=null;
+  if(s===1&&(quick||fromKey&&G.keyArm===`${r},${c}`)){G.keyArm=null;tryPlace(r,c);return}
+  if(s===0){snapshot();setCell(r,c,1);sfx.tap();lastTap={r,c,t:now};if(fromKey)G.keyArm=`${r},${c}`;drawHud();return}
+  G.keyArm=null;snapshot();setCell(r,c,0);sfx.tap();drawHud();
+}
+function tryPlace(r,c){
   if(G.sol[r]!==c){
     G.hearts--;const b=cellEl(r,c);b.classList.remove('bad');void b.offsetWidth;b.classList.add('bad');
     sfx.bad();buzz(90);toast('Buraya park edilemez, bir can gitti.');drawHud();
@@ -288,6 +295,25 @@ function tap(r,c){
   }
   snapshot();placeMoto(r,c);toast('Güzel park!');
 }
+// Sürükleyerek işaretleme: geçtiğin boş hücrelere ✕ koyar
+function cellAt(x,y){const el=document.elementFromPoint(x,y);const b=el&&el.closest?el.closest('#grid .cell'):null;return b?[+b.dataset.r,+b.dataset.c]:null}
+function dragMark(r,c){if(G.state[r][c]===0){setCell(r,c,1);sfx.tap()}}
+$('grid').addEventListener('pointerdown',e=>{
+  const b=e.target.closest('.cell');if(!b||!G||G.over)return;e.preventDefault();
+  drag={r:+b.dataset.r,c:+b.dataset.c,moved:false,id:e.pointerId};
+});
+window.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;const at=cellAt(e.clientX,e.clientY);if(!at)return;
+  const[r,c]=at;if(!drag.moved&&r===drag.r&&c===drag.c)return;
+  if(!drag.moved){drag.moved=true;lastTap=null;snapshot();dragMark(drag.r,drag.c)}
+  dragMark(r,c);
+});
+window.addEventListener('pointerup',e=>{
+  if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;
+  if(d.moved){drawHud();return}
+  tap(d.r,d.c,false);
+});
+window.addEventListener('pointercancel',()=>{drag=null});
 function placeMoto(r,c){
   setCell(r,c,2);sfx.place();buzz(20);
   if(save.settings.auto)autoMark(r,c);
@@ -361,13 +387,13 @@ function act(a){
 $('sheetBg').addEventListener('click',e=>{if(e.target===$('sheetBg')&&sheetClosable)closeSheet()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sheetBg').hidden&&sheetClosable)closeSheet()});
 
-const mini=(cells)=>`<div class="mini">${cells.map(([col,s])=>`<i style="background:var(${col})">${s==='m'?MOTO:s==='x'?'<b style="width:9px;height:9px;border-radius:50%;background:rgba(27,29,32,.55)"></b>':''}</i>`).join('')}</div>`;
+const mini=(cells)=>`<div class="mini">${cells.map(([col,s])=>`<i style="background:var(${col})">${s==='m'?MOTO:s==='x'?'<b style="font:800 15px/1 var(--body);color:rgba(27,29,32,.62)">✕</b>':''}</i>`).join('')}</div>`;
 function howTo(){
   openSheet(`<h2>Nasıl oynanır</h2>
   <div class="steps">
     <div class="step">${mini([['--r2','m'],['--r2',''],['--r2',''],['--r3',''],['--r3',''],['--r2',''],['--r3',''],['--r3',''],['--r3','']])}<p><b>Her renkli bölgeye tam bir motor</b> park et. Mavi bölgede bir motor var, bu yüzden mavi tamam.</p></div>
     <div class="step">${mini([['--r1','m'],['--r1','x'],['--r1','x'],['--r4','x'],['--r4','x'],['--r4',''],['--r4','x'],['--r5',''],['--r5','']])}<p>İki motor <b>aynı satırda, sütunda</b> olamaz ve <b>çapraz dahil yan yana</b> duramaz.</p></div>
-    <div class="step">${mini([['--r6','x'],['--r6',''],['--r6','m'],['--r7',''],['--r7',''],['--r6',''],['--r7',''],['--r7',''],['--r7','']])}<p><b>Bir dokunuş</b> işaret koyar, <b>ikinci dokunuş</b> park eder, <b>üçüncü</b> temizler. Yanlış park bir can götürür.</p></div>
+    <div class="step">${mini([['--r6','x'],['--r6',''],['--r6','m'],['--r7',''],['--r7',''],['--r6',''],['--r7',''],['--r7',''],['--r7','']])}<p><b>Dokun</b> ✕ koyar, <b>hızlı çift dokunuş</b> motoru park eder. Parmağını <b>sürükleyerek</b> birçok hücreyi ✕ ile işaretleyebilirsin. ✕ ya da motora tekrar dokunmak temizler. Yanlış park bir can götürür.</p></div>
   </div>
   <button class="btn" data-act="tutorialDone">Anladım, başlayalım</button>`);
 }

@@ -1,5 +1,5 @@
 // Motopark — internetsiz çalışma için önbellek
-const CACHE = 'motopark-v1.0.1';
+const CACHE = 'motopark-v1.1';
 const FILES = ['./', './index.html', './manifest.json', './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
