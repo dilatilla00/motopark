@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Motopark">
+<meta name="theme-color" content="#1b1d20">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<title>Motopark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo:wght@400;600;800&display=swap">
+<style>
+/* Layout: telefon uygulaması — tek ekranlık görünümler (ana menü / oyun), alttan açılan paneller, asfalt + sarı park çizgisi kimliği */
+:root{
+  --asphalt:#1b1d20; --asphalt-2:#25282c; --asphalt-3:#30343a; --line:#f2c230; --chalk:#eceae4; --muted:#9a9ca0;
+  --danger:#e5533d; --ok:#5cc28a;
+  --r1:#c98b6b; --r2:#6f9fc4; --r3:#8fb36a; --r4:#c27aa6; --r5:#d4b257; --r6:#6dbab0; --r7:#9a86c9; --r8:#c96f6f;
+  --display:"Bungee","Impact","Arial Black",sans-serif;
+  --body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--asphalt);color:var(--chalk);font-family:var(--body);font-size:15px;overflow:hidden;
+  background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:5px 5px}
+button{font-family:var(--body);color:inherit}
+:focus-visible{outline:2px solid var(--line);outline-offset:2px}
+.app{max-width:480px;margin:0 auto;height:100%;position:relative;display:flex;flex-direction:column;box-sizing:border-box;
+  padding-block:14px 16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.screen{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow-y:auto}
+
+/* Ana menü */
+.logo{margin:18px 0 4px}
+.logo h1{font-family:var(--display);font-weight:400;color:var(--line);font-size:clamp(40px,13vw,58px);line-height:.95;margin:0}
+.logo p{margin:8px 0 0;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.stripe{height:10px;background:repeating-linear-gradient(90deg,var(--line) 0 28px,transparent 28px 44px);opacity:.9;border-radius:2px}
+.daily{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--line);color:var(--asphalt);
+  border:none;border-radius:10px;padding:16px 18px;cursor:pointer;text-align:left}
+.daily b{display:block;font-family:var(--display);font-weight:400;font-size:20px}
+.daily span{font-size:13px;font-weight:600}
+.daily .go{font-size:26px;font-weight:800}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:6px 0 -4px}
+.levels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lvl{background:var(--asphalt-2);border:1.5px solid var(--asphalt-3);border-radius:10px;padding:14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.lvl:active{transform:scale(.98)}
+.lvl .name{font-family:var(--display);font-size:18px;color:var(--chalk)}
+.lvl .size{font-size:13px;color:var(--muted);font-weight:600}
+.lvl .meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;border-top:1px dashed var(--asphalt-3);padding-top:8px;margin-top:2px}
+.lvl .meta b{color:var(--chalk)}
+.dots{display:flex;gap:4px}
+.dots i{width:9px;height:9px;border-radius:2px;background:var(--asphalt-3)}
+.dots i.on{background:var(--line)}
+.menu-row{display:flex;gap:10px;margin-top:auto}
+.btn{font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;border:none;border-radius:8px;padding:13px 16px;cursor:pointer;background:var(--chalk);color:var(--asphalt)}
+.btn.ghost{background:transparent;color:var(--chalk);box-shadow:inset 0 0 0 1.5px var(--asphalt-3)}
+.btn.wide{flex:1}
+
+/* Oyun ekranı */
+.topbar{display:flex;align-items:center;gap:10px}
+.icon-btn{width:40px;height:40px;border-radius:8px;border:none;background:var(--asphalt-2);display:grid;place-items:center;cursor:pointer;font-size:20px;flex:none}
+.title{flex:1;min-width:0}
+.title b{display:block;font-family:var(--display);font-weight:400;font-size:17px;color:var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.title span{font-size:12px;color:var(--muted);font-weight:600}
+.hud{display:flex;justify-content:space-between;align-items:center;background:var(--asphalt-2);border-radius:8px;padding:10px 14px;font-variant-numeric:tabular-nums}
+.hearts{display:flex;gap:4px;font-size:20px}
+.hearts span{color:var(--danger);transition:opacity .3s,transform .3s}
+.hearts span.gone{opacity:.15;transform:scale(.8)}
+.time{font-weight:800;font-size:18px}
+.board-wrap{flex:1;display:grid;place-items:center;min-height:0}
+.lot{position:relative;padding:8px;background:var(--asphalt-2);border-radius:6px;box-shadow:inset 0 0 0 3px var(--line),0 10px 30px rgba(0,0,0,.45)}
+.grid{display:grid;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.cell{--sz:min(calc((100vw - 60px)/var(--n)),calc((100vh - 330px)/var(--n)),54px);width:var(--sz);height:var(--sz);box-sizing:border-box;
+  border:0 solid var(--asphalt);background:var(--c);display:grid;place-items:center;cursor:pointer;padding:0;filter:saturate(.85)}
+.cell.mark::after{content:"";width:22%;height:22%;border-radius:50%;background:rgba(27,29,32,.55)}
+.cell.moto svg{width:74%;height:74%;animation:drop .25s ease-out}
+.cell.bad{animation:shake .35s}
+.lot.won .cell{filter:saturate(1.2)}
+@keyframes drop{from{transform:translateY(-30%) scale(1.2);opacity:0}to{transform:none;opacity:1}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.toast{min-height:20px;text-align:center;font-size:13.5px;color:var(--muted);margin:0}
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tool{background:var(--asphalt-2);border:1.5px solid var(--asphalt-3);border-radius:10px;padding:10px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12.5px;font-weight:700;position:relative}
+.tool .ic{font-size:20px}
+.tool[disabled]{opacity:.4;cursor:default}
+.tool .badge{position:absolute;top:6px;right:10px;background:var(--line);color:var(--asphalt);border-radius:999px;font-size:11px;font-weight:800;min-width:18px;height:18px;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.tool[aria-pressed="true"]{border-color:var(--line);color:var(--line)}
+
+/* Paneller */
+.sheet-bg{position:fixed;inset:0;background:rgba(10,11,12,.72);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{width:100%;max-width:480px;background:var(--asphalt-2);border-radius:16px 16px 0 0;box-sizing:border-box;
+  padding:22px max(20px,env(safe-area-inset-left,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px;animation:up .25s ease-out;max-height:90%;overflow-y:auto}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet h2{font-family:var(--display);font-weight:400;color:var(--line);font-size:26px;margin:0;text-wrap:balance}
+.sheet p{margin:0;line-height:1.5;color:var(--chalk)}
+.stars{display:flex;gap:6px;font-size:34px;justify-content:center}
+.stars span{color:var(--asphalt-3)}
+.stars span.on{color:var(--line)}
+.result{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-variant-numeric:tabular-nums}
+.result div{background:var(--asphalt);border-radius:8px;padding:10px;text-align:center}
+.result small{display:block;color:var(--muted);font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.result b{font-size:20px}
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:12px;align-items:flex-start}
+.mini{flex:none;width:64px;height:64px;display:grid;grid-template-columns:repeat(3,1fr);border-radius:4px;overflow:hidden;box-shadow:0 0 0 2px var(--line)}
+.mini i{display:grid;place-items:center;font-style:normal}
+.mini svg{width:80%}
+.step p{font-size:14px;color:var(--chalk)}
+.step p b{color:var(--line)}
+.setting{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--asphalt-3)}
+.setting span small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.switch{appearance:none;-webkit-appearance:none;width:46px;height:28px;border-radius:999px;background:var(--asphalt-3);position:relative;cursor:pointer;flex:none;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--chalk);transition:transform .2s}
+.switch:checked{background:var(--line)}
+.switch:checked::after{transform:translateX(18px);background:var(--asphalt)}
+.row{display:flex;gap:10px}
+.version{font-size:12px;color:var(--muted);text-align:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;-webkit-tap-highlight-color:transparent;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);overscroll-behavior:none}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ANA MENÜ -->
+  <section class="screen" id="home">
+    <div class="logo"><h1>Moto<br>park</h1><p>Her bölgeye bir motor</p></div>
+    <div class="stripe" aria-hidden="true"></div>
+    <button class="daily" id="dailyBtn"><div><b>Günün Bulmacası</b><span id="dailyInfo">6×6 · Herkes için aynı alan</span></div><div class="go">›</div></button>
+    <p class="eyebrow">Zorluk seç</p>
+    <div class="levels" id="levels"></div>
+    <div class="menu-row">
+      <button class="btn ghost wide" id="howBtn">Nasıl oynanır</button>
+      <button class="btn ghost wide" id="setBtn">Ayarlar</button>
+    </div>
+    <p class="version">Sürüm 1.0 · prototip</p>
+  </section>
+
+  <!-- OYUN -->
+  <section class="screen" id="game" hidden>
+    <div class="topbar">
+      <button class="icon-btn" id="backBtn" aria-label="Ana menüye dön">‹</button>
+      <div class="title"><b id="gTitle">Orta</b><span id="gSub">6×6 park alanı</span></div>
+      <button class="icon-btn" id="gSetBtn" aria-label="Ayarlar">⚙</button>
+    </div>
+    <div class="hud"><div class="hearts" id="hearts" aria-label="Kalan can"></div><div class="time" id="time">0:00</div></div>
+    <div class="board-wrap"><div class="lot" id="lot"><div class="grid" id="grid"></div></div></div>
+    <p class="toast" id="toast">Dokun: işaretle · tekrar: park et · tekrar: temizle</p>
+    <div class="tools">
+      <button class="tool" id="undoBtn"><span class="ic">↶</span>Geri al</button>
+      <button class="tool" id="hintBtn"><span class="badge" id="hintCount">3</span><span class="ic">💡</span>İpucu</button>
+      <button class="tool" id="autoBtn" aria-pressed="false"><span class="ic">✕</span>Oto işaret</button>
+    </div>
+  </section>
+</div>
+
+<div class="sheet-bg" id="sheetBg" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script>
+const MOTO=`<svg viewBox="0 0 64 40" aria-hidden="true"><circle cx="13" cy="28" r="9" fill="none" stroke="#1b1d20" stroke-width="4.5"/><circle cx="51" cy="28" r="9" fill="none" stroke="#1b1d20" stroke-width="4.5"/><path d="M13 28 L26 16 L40 16 L51 28" fill="none" stroke="#1b1d20" stroke-width="4.5" stroke-linejoin="round"/><path d="M22 14 h16 l-3 -6 h-9z" fill="#1b1d20"/><path d="M40 16 L45 6 h6" fill="none" stroke="#1b1d20" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="22" r="3.5" fill="#f2c230"/></svg>`;
+const COLORS=['--r1','--r2','--r3','--r4','--r5','--r6','--r7','--r8'];
+const LEVELS=[{n:5,name:'Kolay'},{n:6,name:'Orta'},{n:7,name:'Zor'},{n:8,name:'Uzman'}];
+const $=id=>document.getElementById(id);
+
+/* ---------- Kayıt ---------- */
+let save={stats:{},daily:{},settings:{sound:true,vib:true,auto:false},seenTutorial:false};
+try{const s=JSON.parse(localStorage.getItem('motopark-v1'));if(s)save=Object.assign(save,s)}catch(e){}
+const persist=()=>{try{localStorage.setItem('motopark-v1',JSON.stringify(save))}catch(e){}};
+const todayKey=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const fmt=s=>s==null?'—':`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+
+/* ---------- Rastgelelik (günlük bulmaca için tohumlu) ---------- */
+let rand=Math.random;
+function seeded(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const rnd=k=>Math.floor(rand()*k);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+
+/* ---------- Bulmaca üretimi ---------- */
+function genSolution(n){
+  const cols=[],used=new Array(n).fill(false);
+  (function go(r){
+    if(r===n)return true;
+    for(const c of shuffle([...Array(n).keys()])){
+      if(used[c]||(r>0&&Math.abs(cols[r-1]-c)<2))continue;
+      used[c]=true;cols[r]=c;if(go(r+1))return true;used[c]=false;
+    }
+    return false;
+  })(0);
+  return cols;
+}
+function genRegions(n,cols){
+  const g=Array.from({length:n},()=>new Array(n).fill(-1));
+  cols.forEach((c,r)=>g[r][c]=r);
+  let left=n*n-n;const D=[[1,0],[-1,0],[0,1],[0,-1]];
+  while(left>0){
+    const r=rnd(n),c=rnd(n);if(g[r][c]!==-1)continue;
+    const nb=D.map(([a,b])=>[r+a,c+b]).filter(([a,b])=>a>=0&&b>=0&&a<n&&b<n&&g[a][b]!==-1);
+    if(!nb.length)continue;const[a,b]=nb[rnd(nb.length)];g[r][c]=g[a][b];left--;
+  }
+  return g;
+}
+function countSolutions(n,g){
+  let count=0;const cu=new Array(n).fill(false),ru=new Array(n).fill(false);
+  (function go(r,prev){
+    if(count>1)return;if(r===n){count++;return}
+    for(let c=0;c<n;c++){const rg=g[r][c];if(cu[c]||ru[rg]||(r>0&&Math.abs(prev-c)<2))continue;cu[c]=ru[rg]=true;go(r+1,c);cu[c]=ru[rg]=false}
+  })(0,-9);
+  return count;
+}
+function newPuzzle(n,seed){
+  rand=seed!=null?seeded(seed):Math.random;
+  for(let t=0;t<25000;t++){const cols=genSolution(n),g=genRegions(n,cols);if(countSolutions(n,g)===1)return{cols,g}}
+  const cols=genSolution(n);return{cols,g:genRegions(n,cols)};
+}
+
+/* ---------- Ses ve titreşim ---------- */
+let ac=null;
+function beep(freq,dur=.08,type='sine',vol=.08,delay=0){
+  if(!save.settings.sound)return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+delay;
+    o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g).connect(ac.destination);o.start(t);o.stop(t+dur+.02)}catch(e){}
+}
+const sfx={
+  tap:()=>beep(520,.04,'triangle',.05),
+  place:()=>{beep(330,.09,'triangle');beep(495,.12,'triangle',.08,.06)},
+  bad:()=>beep(120,.25,'sawtooth',.06),
+  win:()=>[523,659,784,1047].forEach((f,i)=>beep(f,.18,'triangle',.08,i*.1))
+};
+const buzz=ms=>{if(save.settings.vib&&navigator.vibrate)try{navigator.vibrate(ms)}catch(e){}};
+
+/* ---------- Oyun durumu ---------- */
+let G=null,timer=null;
+function startGame(n,daily){
+  const key=todayKey();
+  const seed=daily?+key.replace(/-/g,''):null;
+  const p=newPuzzle(n,seed);
+  G={n,daily,sol:p.cols,region:p.g,state:Array.from({length:n},()=>new Array(n).fill(0)),hearts:3,hints:3,history:[],over:false,start:Date.now(),elapsed:0};
+  const lvl=LEVELS.find(l=>l.n===n);
+  $('gTitle').textContent=daily?'Günün Bulmacası':lvl.name;
+  $('gSub').textContent=`${n}×${n} park alanı${daily?' · '+key.split('-').reverse().join('.'):''}`;
+  $('lot').classList.remove('won');
+  toast('Dokun: işaretle · tekrar: park et · tekrar: temizle');
+  render();drawHud();show('game');
+  clearInterval(timer);timer=setInterval(tick,1000);tick();
+}
+function tick(){if(!G||G.over)return;G.elapsed=Math.floor((Date.now()-G.start)/1000);$('time').textContent=fmt(G.elapsed)}
+function render(){
+  const grid=$('grid'),{n,region,state}=G;grid.innerHTML='';
+  grid.style.gridTemplateColumns=`repeat(${n},auto)`;grid.style.setProperty('--n',n);
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+    const b=document.createElement('button');b.className='cell';
+    b.style.setProperty('--c',`var(${COLORS[region[r][c]]})`);
+    const th=(rr,cc)=>(rr<0||cc<0||rr>=n||cc>=n||region[rr][cc]!==region[r][c])?'3px':'.5px';
+    b.style.borderWidth=`${th(r-1,c)} ${th(r,c+1)} ${th(r+1,c)} ${th(r,c-1)}`;
+    b.setAttribute('aria-label',`Satır ${r+1}, sütun ${c+1}`);
+    paint(b,state[r][c]);b.addEventListener('click',()=>tap(r,c));grid.appendChild(b);
+  }
+}
+const cellEl=(r,c)=>$('grid').children[r*G.n+c];
+function paint(b,s){b.classList.toggle('mark',s===1);b.classList.toggle('moto',s===2);b.innerHTML=s===2?MOTO:''}
+function setCell(r,c,s){G.state[r][c]=s;paint(cellEl(r,c),s)}
+function snapshot(){G.history.push(G.state.map(row=>row.slice()));if(G.history.length>200)G.history.shift()}
+function drawHud(){
+  $('hearts').innerHTML=[0,1,2].map(i=>`<span class="${i<G.hearts?'':'gone'}">♥</span>`).join('');
+  $('hintCount').textContent=G.hints;$('hintBtn').disabled=G.hints<=0||G.over;
+  $('undoBtn').disabled=!G.history.length||G.over;
+  $('autoBtn').setAttribute('aria-pressed',save.settings.auto);
+}
+function toast(t){$('toast').textContent=t}
+
+function tap(r,c){
+  if(G.over)return;const s=G.state[r][c];
+  if(s===0){snapshot();setCell(r,c,1);sfx.tap();drawHud();return}
+  if(s===2){snapshot();setCell(r,c,0);sfx.tap();drawHud();return}
+  if(G.sol[r]!==c){
+    G.hearts--;const b=cellEl(r,c);b.classList.remove('bad');void b.offsetWidth;b.classList.add('bad');
+    sfx.bad();buzz(90);toast('Buraya park edilemez, bir can gitti.');drawHud();
+    if(G.hearts<=0)lose();return;
+  }
+  snapshot();placeMoto(r,c);toast('Güzel park!');
+}
+function placeMoto(r,c){
+  setCell(r,c,2);sfx.place();buzz(20);
+  if(save.settings.auto)autoMark(r,c);
+  drawHud();checkWin();
+}
+function autoMark(r,c){
+  const{n,region,state}=G;
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    if(state[i][j]!==0)continue;
+    if(i===r||j===c||region[i][j]===region[r][c]||(Math.abs(i-r)<=1&&Math.abs(j-c)<=1))setCell(i,j,1);
+  }
+}
+function undo(){if(!G.history.length||G.over)return;G.state=G.history.pop();render();drawHud();toast('Son hamle geri alındı.')}
+function hint(){
+  if(G.over||G.hints<=0)return;
+  // Henüz park edilmemiş, en az seçenekli bölgeyi aç
+  let best=null,bestOpen=99;
+  for(let r=0;r<G.n;r++){
+    if(G.state[r][G.sol[r]]===2)continue;
+    const rg=G.region[r][G.sol[r]];let open=0;
+    for(let i=0;i<G.n;i++)for(let j=0;j<G.n;j++)if(G.region[i][j]===rg&&G.state[i][j]===0)open++;
+    if(open<bestOpen){bestOpen=open;best=r}
+  }
+  if(best==null)return;
+  G.hints--;snapshot();placeMoto(best,G.sol[best]);toast(`İpucu kullanıldı, ${G.hints} kaldı.`);drawHud();
+}
+function checkWin(){
+  for(let r=0;r<G.n;r++)if(G.state[r][G.sol[r]]!==2)return;
+  G.over=true;clearInterval(timer);tick();$('lot').classList.add('won');sfx.win();buzz([30,40,30]);
+  const stars=G.hearts;
+  const st=save.stats[G.n]||(save.stats[G.n]={solved:0,best:null,stars:0});
+  st.solved++;const newBest=st.best==null||G.elapsed<st.best;if(newBest)st.best=G.elapsed;st.stars=Math.max(st.stars,stars);
+  if(G.daily)save.daily[todayKey()]=Math.max(save.daily[todayKey()]||0,stars);
+  persist();drawHud();
+  setTimeout(()=>openSheet(`
+    <div class="stars">${[0,1,2].map(i=>`<span class="${i<stars?'on':''}">★</span>`).join('')}</div>
+    <h2 style="text-align:center">Park tamam!</h2>
+    <div class="result"><div><small>Süre</small><b>${fmt(G.elapsed)}</b></div><div><small>${newBest?'Yeni rekor':'En iyi'}</small><b>${fmt(st.best)}</b></div></div>
+    <div class="row"><button class="btn ghost wide" data-act="home">Menü</button>${G.daily?'':`<button class="btn wide" data-act="next">Sıradaki</button>`}</div>`,false),650);
+}
+function lose(){
+  G.over=true;clearInterval(timer);drawHud();
+  openSheet(`<h2>Canın bitti</h2><p>Tahmin etmek yerine işaretleri kullan: bir motorun duramayacağı hücreleri önce kapat.</p>
+    <div class="row"><button class="btn ghost wide" data-act="home">Menü</button><button class="btn wide" data-act="retry">Yeniden dene</button></div>`,false);
+}
+
+/* ---------- Ekranlar ve paneller ---------- */
+function show(id){$('home').hidden=id!=='home';$('game').hidden=id!=='game';if(id==='home')drawHome()}
+function drawHome(){
+  $('levels').innerHTML=LEVELS.map(l=>{const s=save.stats[l.n]||{};return `
+    <button class="lvl" data-n="${l.n}"><span class="name">${l.name}</span><span class="size">${l.n}×${l.n} alan</span>
+    <span class="dots">${[0,1,2].map(i=>`<i class="${i<(s.stars||0)?'on':''}"></i>`).join('')}</span>
+    <span class="meta"><span>Çözülen <b>${s.solved||0}</b></span><span>En iyi <b>${fmt(s.best)}</b></span></span></button>`}).join('');
+  $('levels').querySelectorAll('.lvl').forEach(b=>b.onclick=()=>startGame(+b.dataset.n,false));
+  const d=save.daily[todayKey()];
+  $('dailyInfo').textContent=d?`Bugün çözüldü · ${'★'.repeat(d)}${'☆'.repeat(3-d)}`:'6×6 · Herkes için aynı alan';
+}
+let sheetClosable=true;
+function openSheet(html,closable=true){
+  sheetClosable=closable;$('sheet').innerHTML=html;$('sheetBg').hidden=false;
+  $('sheet').querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>act(b.dataset.act));
+  const f=$('sheet').querySelector('button,input');if(f)f.focus();
+}
+function closeSheet(){$('sheetBg').hidden=true}
+function act(a){
+  closeSheet();
+  if(a==='home'){clearInterval(timer);show('home')}
+  if(a==='next'||a==='retry')startGame(G.n,G.daily);
+  if(a==='tutorialDone'){save.seenTutorial=true;persist()}
+}
+$('sheetBg').addEventListener('click',e=>{if(e.target===$('sheetBg')&&sheetClosable)closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sheetBg').hidden&&sheetClosable)closeSheet()});
+
+const mini=(cells)=>`<div class="mini">${cells.map(([col,s])=>`<i style="background:var(${col})">${s==='m'?MOTO:s==='x'?'<b style="width:9px;height:9px;border-radius:50%;background:rgba(27,29,32,.55)"></b>':''}</i>`).join('')}</div>`;
+function howTo(){
+  openSheet(`<h2>Nasıl oynanır</h2>
+  <div class="steps">
+    <div class="step">${mini([['--r2','m'],['--r2',''],['--r2',''],['--r3',''],['--r3',''],['--r2',''],['--r3',''],['--r3',''],['--r3','']])}<p><b>Her renkli bölgeye tam bir motor</b> park et. Mavi bölgede bir motor var, bu yüzden mavi tamam.</p></div>
+    <div class="step">${mini([['--r1','m'],['--r1','x'],['--r1','x'],['--r4','x'],['--r4','x'],['--r4',''],['--r4','x'],['--r5',''],['--r5','']])}<p>İki motor <b>aynı satırda, sütunda</b> olamaz ve <b>çapraz dahil yan yana</b> duramaz.</p></div>
+    <div class="step">${mini([['--r6','x'],['--r6',''],['--r6','m'],['--r7',''],['--r7',''],['--r6',''],['--r7',''],['--r7',''],['--r7','']])}<p><b>Bir dokunuş</b> işaret koyar, <b>ikinci dokunuş</b> park eder, <b>üçüncü</b> temizler. Yanlış park bir can götürür.</p></div>
+  </div>
+  <button class="btn" data-act="tutorialDone">Anladım, başlayalım</button>`);
+}
+function settings(){
+  const s=save.settings;
+  openSheet(`<h2>Ayarlar</h2>
+  <label class="setting"><span>Ses efektleri</span><input type="checkbox" class="switch" id="optSound" ${s.sound?'checked':''}></label>
+  <label class="setting"><span>Titreşim<small>Destekleyen cihazlarda</small></span><input type="checkbox" class="switch" id="optVib" ${s.vib?'checked':''}></label>
+  <label class="setting"><span>Otomatik işaret<small>Motor koyunca kapanan hücreleri işaretler</small></span><input type="checkbox" class="switch" id="optAuto" ${s.auto?'checked':''}></label>
+  <button class="btn ghost" id="resetBtn">İlerlemeyi sıfırla</button>
+  <button class="btn" data-act="close">Kapat</button>`);
+  $('optSound').onchange=e=>{s.sound=e.target.checked;persist()};
+  $('optVib').onchange=e=>{s.vib=e.target.checked;persist()};
+  $('optAuto').onchange=e=>{s.auto=e.target.checked;persist();if(G)drawHud()};
+  $('resetBtn').onclick=e=>{
+    if(e.target.dataset.sure){save.stats={};save.daily={};persist();e.target.textContent='İlerleme sıfırlandı';e.target.disabled=true;drawHome()}
+    else{e.target.dataset.sure=1;e.target.textContent='Emin misin? Tekrar dokun'}
+  };
+}
+
+$('dailyBtn').onclick=()=>startGame(6,true);
+$('howBtn').onclick=howTo;$('setBtn').onclick=settings;$('gSetBtn').onclick=settings;
+$('backBtn').onclick=()=>{clearInterval(timer);show('home')};
+$('undoBtn').onclick=undo;$('hintBtn').onclick=hint;
+$('autoBtn').onclick=()=>{save.settings.auto=!save.settings.auto;persist();drawHud();toast(save.settings.auto?'Otomatik işaret açık.':'Otomatik işaret kapalı.')};
+
+show('home');
+if(!save.seenTutorial)howTo();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
